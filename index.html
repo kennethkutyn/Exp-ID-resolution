@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amplitude ID Resolution Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Left column - app simulation */
+  #app-column { width: 50%; background: #fff; overflow-y: auto; border-right: 2px solid #e0e0e0; }
+
+  /* Right column - amplitude log */
+  #log-column { width: 50%; background: #1a1a2e; color: #e0e0e0; overflow-y: auto; padding: 20px; }
+  #log-column h2 { color: #00d4aa; margin-bottom: 16px; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* Log entries */
+  .log-step { margin-bottom: 20px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .log-step-header { padding: 10px 14px; font-weight: 600; font-size: 13px; letter-spacing: 0.5px; }
+  .log-step-body { padding: 12px 14px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace; line-height: 1.6; }
+  .log-step-body pre { white-space: pre-wrap; word-break: break-all; }
+
+  .step-info .log-step-header { background: #16213e; color: #4fc3f7; }
+  .step-info .log-step-body { background: #0f1a2e; }
+
+  .step-request .log-step-header { background: #1a1a3e; color: #ce93d8; }
+  .step-request .log-step-body { background: #12122e; }
+
+  .step-response .log-step-header { background: #1a2e1a; color: #81c784; }
+  .step-response .log-step-body { background: #0f1e0f; }
+
+  .step-highlight .log-step-header { background: #2e2e1a; color: #ffd54f; }
+  .step-highlight .log-step-body { background: #1e1e0f; }
+
+  .step-divider { border: none; border-top: 2px dashed #2a2a4a; margin: 24px 0; }
+  .step-label { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+
+  /* Variant callout */
+  .variant-box { background: #2e2e1a; border: 2px solid #ffd54f; border-radius: 8px; padding: 14px; margin-top: 8px; text-align: center; }
+  .variant-box .variant-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+  .variant-box .variant-value { font-size: 22px; font-weight: 700; color: #ffd54f; margin-top: 4px; font-family: 'SF Mono', monospace; }
+
+  /* Envato-like landing page */
+  .envato-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #0d0d0d; }
+  .envato-logo { color: #fff; font-size: 20px; font-weight: 700; }
+  .envato-logo span { color: #82b440; }
+  .envato-nav-links { display: flex; gap: 24px; align-items: center; }
+  .envato-nav-links a { color: #ccc; text-decoration: none; font-size: 14px; }
+  .envato-signin { background: #82b440; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .envato-signin:hover { background: #6d9a35; }
+
+  .envato-hero { background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 100%); padding: 80px 32px; text-align: center; }
+  .envato-hero h1 { color: #fff; font-size: 42px; font-weight: 700; margin-bottom: 16px; line-height: 1.2; }
+  .envato-hero h1 span { color: #82b440; }
+  .envato-hero p { color: #aaa; font-size: 18px; margin-bottom: 32px; }
+  .envato-search { display: flex; max-width: 600px; margin: 0 auto; }
+  .envato-search input { flex: 1; padding: 14px 20px; border: none; border-radius: 4px 0 0 4px; font-size: 16px; background: #fff; }
+  .envato-search button { padding: 14px 28px; background: #82b440; color: #fff; border: none; border-radius: 0 4px 4px 0; font-size: 16px; font-weight: 600; cursor: pointer; }
+
+  .envato-categories { display: flex; gap: 12px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+  .envato-cat { background: #f5f5f5; border-radius: 8px; padding: 20px 28px; text-align: center; min-width: 120px; cursor: default; }
+  .envato-cat-icon { font-size: 28px; margin-bottom: 8px; }
+  .envato-cat-label { font-size: 13px; color: #333; font-weight: 500; }
+
+  .envato-banner { background: #f0f7e6; padding: 24px 32px; text-align: center; color: #333; font-size: 14px; }
+
+  /* Dashboard page */
+  .dashboard-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #0d0d0d; }
+  .dashboard-greeting { color: #fff; font-size: 14px; }
+  .dashboard-greeting span { color: #82b440; font-weight: 600; }
+  .dashboard-signout { background: transparent; color: #ccc; border: 1px solid #444; padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; }
+  .dashboard-signout:hover { border-color: #82b440; color: #82b440; }
+
+  .dashboard-body { padding: 40px 32px; }
+  .dashboard-body h2 { font-size: 28px; margin-bottom: 8px; color: #1a1a1a; }
+  .dashboard-body p { color: #666; margin-bottom: 32px; }
+  .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .dashboard-card { background: #f9f9f9; border-radius: 8px; padding: 24px; border: 1px solid #eee; }
+  .dashboard-card h3 { font-size: 14px; color: #888; margin-bottom: 8px; }
+  .dashboard-card .value { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Settings button & modal */
+  #settings-btn { position: fixed; bottom: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: #333; color: #ccc; border: 1px solid #555; font-size: 18px; cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  #settings-btn:hover { background: #444; color: #fff; }
+  #settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1001; align-items: center; justify-content: center; }
+  #settings-overlay.open { display: flex; }
+  #settings-modal { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 10px; padding: 24px; width: 420px; max-width: 90vw; }
+  #settings-modal h3 { color: #00d4aa; margin-bottom: 16px; font-size: 15px; }
+  #settings-modal label { color: #aaa; font-size: 12px; display: block; margin-bottom: 6px; }
+  #settings-modal input { width: 100%; padding: 10px 12px; background: #0f1a2e; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; font-family: 'SF Mono', monospace; font-size: 13px; margin-bottom: 16px; }
+  #settings-modal input:focus { outline: none; border-color: #00d4aa; }
+  #settings-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  #settings-actions button { padding: 8px 18px; border-radius: 4px; border: none; font-size: 13px; cursor: pointer; }
+  #settings-save { background: #00d4aa; color: #0d0d0d; font-weight: 600; }
+  #settings-cancel { background: transparent; color: #aaa; border: 1px solid #444 !important; }
+</style>
+</head>
+<body>
+
+<!-- LEFT COLUMN -->
+<div id="app-column">
+  <!-- Landing Page -->
+  <div id="landing-page" class="page active">
+    <nav class="envato-nav">
+      <div class="envato-logo">Envato <span>Elements</span></div>
+      <div class="envato-nav-links">
+        <a href="#">Browse</a>
+        <a href="#">Pricing</a>
+        <button class="envato-signin" id="signin-btn">Sign In</button>
+      </div>
+    </nav>
+    <div class="envato-hero">
+      <h1>Unlimited downloads.<br>One <span>low cost.</span></h1>
+      <p>Millions of creative assets. Unlimited downloads. One low cost.</p>
+      <div class="envato-search">
+        <input type="text" placeholder="Search from millions of assets...">
+        <button>Search</button>
+      </div>
+    </div>
+    <div class="envato-categories">
+      <div class="envato-cat"><div class="envato-cat-icon">🖼</div><div class="envato-cat-label">Photos</div></div>
+      <div class="envato-cat"><div class="envato-cat-icon">🎨</div><div class="envato-cat-label">Graphics</div></div>
+      <div class="envato-cat"><div class="envato-cat-icon">🎬</div><div class="envato-cat-label">Video</div></div>
+      <div class="envato-cat"><div class="envato-cat-icon">🎵</div><div class="envato-cat-label">Music</div></div>
+      <div class="envato-cat"><div class="envato-cat-icon">📝</div><div class="envato-cat-label">Templates</div></div>
+      <div class="envato-cat"><div class="envato-cat-icon">🔤</div><div class="envato-cat-label">Fonts</div></div>
+    </div>
+    <div class="envato-banner">
+      Get started today with a free account &mdash; access millions of assets.
+    </div>
+  </div>
+
+  <!-- Dashboard Page -->
+  <div id="dashboard-page" class="page">
+    <nav class="dashboard-nav">
+      <div class="envato-logo">Envato <span>Elements</span></div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="dashboard-greeting">Welcome, <span id="user-display"></span></div>
+        <button class="dashboard-signout" id="signout-btn">Sign Out</button>
+      </div>
+    </nav>
+    <div class="dashboard-body">
+      <h2>Your Dashboard</h2>
+      <p>Welcome back! Here's an overview of your account.</p>
+      <div class="dashboard-cards">
+        <div class="dashboard-card"><h3>Downloads</h3><div class="value">142</div></div>
+        <div class="dashboard-card"><h3>Collections</h3><div class="value">7</div></div>
+        <div class="dashboard-card"><h3>Favorites</h3><div class="value">38</div></div>
+        <div class="dashboard-card"><h3>Plan</h3><div class="value">Pro</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT COLUMN -->
+<div id="log-column">
+  <h2>Amplitude Activity Log</h2>
+  <div id="log-container"></div>
+</div>
+
+<!-- Settings button & modal -->
+<button id="settings-btn" title="Settings">&#9881;</button>
+<div id="settings-overlay">
+  <div id="settings-modal">
+    <h3>Settings</h3>
+    <label for="api-key-input">Amplitude API Key</label>
+    <input type="text" id="api-key-input">
+    <div id="settings-actions">
+      <button id="settings-cancel">Cancel</button>
+      <button id="settings-save">Save & Restart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_API_KEY = 'e2aac2c2ee5e83512ef2a0cae5cf7999';
+let API_KEY = localStorage.getItem('amp_api_key') || DEFAULT_API_KEY;
+const EXPERIMENT_URL = 'https://api.lab.amplitude.com/v1/vardata';
+const ANALYTICS_URL = 'https://api2.amplitude.com/2/httpapi';
+
+const logContainer = document.getElementById('log-container');
+let deviceId = null;
+let userId = null;
+
+// --- Logging helpers ---
+function addLog(type, title, content) {
+  const div = document.createElement('div');
+  div.className = `log-step step-${type}`;
+  div.innerHTML = `
+    <div class="log-step-header">${title}</div>
+    <div class="log-step-body"><pre>${typeof content === 'string' ? escapeHtml(content) : escapeHtml(JSON.stringify(content, null, 2))}</pre></div>
+  `;
+  logContainer.appendChild(div);
+  scrollLog();
+  return div;
+}
+
+function addDivider(label) {
+  const hr = document.createElement('hr');
+  hr.className = 'step-divider';
+  logContainer.appendChild(hr);
+  if (label) {
+    const lbl = document.createElement('div');
+    lbl.className = 'step-label';
+    lbl.textContent = label;
+    logContainer.appendChild(lbl);
+  }
+  scrollLog();
+}
+
+function addVariantBox(flagKey, variant) {
+  const div = document.createElement('div');
+  div.className = 'variant-box';
+  div.innerHTML = `
+    <div class="variant-label">Flag: ${escapeHtml(flagKey)}</div>
+    <div class="variant-value">${variant ? escapeHtml(variant.key || JSON.stringify(variant)) : 'No variant returned'}</div>
+  `;
+  logContainer.appendChild(div);
+  scrollLog();
+}
+
+function scrollLog() {
+  logContainer.parentElement.scrollTop = logContainer.parentElement.scrollHeight;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// --- Amplitude helpers ---
+async function fetchExperiment(context, label) {
+  const reqBody = context;
+  addLog('request', `${label} -- Experiment Fetch Request`, {
+    method: 'POST',
+    url: EXPERIMENT_URL,
+    headers: { Authorization: `Api-Key ${API_KEY}` },
+    body: reqBody
+  });
+
+  try {
+    const resp = await fetch(EXPERIMENT_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Api-Key ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(reqBody)
+    });
+    const data = await resp.json();
+    addLog('response', `${label} -- Experiment Fetch Response`, data);
+    const flags = Object.keys(data);
+    if (flags.length === 0) {
+      addVariantBox('(none)', null);
+    } else {
+      for (const flag of flags) {
+        addVariantBox(flag, data[flag]);
+      }
+    }
+    return data;
+  } catch (e) {
+    addLog('response', `${label} -- Experiment Fetch Error`, e.message);
+  }
+}
+
+async function trackEvent(eventType, eventDeviceId, eventUserId, label) {
+  const event = { event_type: eventType };
+  if (eventDeviceId) event.device_id = eventDeviceId;
+  if (eventUserId) event.user_id = eventUserId;
+  event.time = Date.now();
+
+  const reqBody = { api_key: API_KEY, events: [event] };
+  addLog('request', `${label} -- Analytics Track Request`, {
+    method: 'POST',
+    url: ANALYTICS_URL,
+    body: reqBody
+  });
+
+  try {
+    const resp = await fetch(ANALYTICS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody)
+    });
+    const data = await resp.json();
+    addLog('response', `${label} -- Analytics Track Response`, data);
+  } catch (e) {
+    addLog('response', `${label} -- Analytics Track Error`, e.message);
+  }
+}
+
+// --- Generate IDs ---
+function generateDeviceId() {
+  let id = '';
+  for (let i = 0; i < 10; i++) id += Math.floor(Math.random() * 10);
+  return id;
+}
+
+function generateUserId() {
+  const names = ['alex','jamie','morgan','casey','riley','jordan','taylor','quinn','avery','blake'];
+  const name = names[Math.floor(Math.random() * names.length)];
+  const num = Math.floor(Math.random() * 9000) + 1000;
+  return `${name}${num}@gmail.com`;
+}
+
+// --- Page flow ---
+async function initLanding() {
+  // Step 1: generate device ID
+  deviceId = generateDeviceId();
+  localStorage.setItem('amp_device_id', deviceId);
+
+  addDivider('Step 1: Anonymous user lands on page');
+  addLog('info', 'Device ID Generated', `device_id: ${deviceId}\nSaved to localStorage`);
+
+  // Step 2: fetch experiment with device_id only
+  addDivider('Step 2: Fetch experiment (device_id only, no user_id)');
+  await fetchExperiment({ device_id: deviceId }, 'Step 2');
+
+  // Step 3: track landing page event
+  addDivider('Step 3: Track "landing_page" event (device_id only)');
+  await trackEvent('landing_page', deviceId, null, 'Step 3');
+}
+
+async function handleSignIn() {
+  userId = generateUserId();
+
+  // Step 4: sign in - track with both IDs (identity resolution moment)
+  addDivider('Step 4: User signs in -- identity resolution');
+  addLog('highlight', 'Identity Resolution Moment', `device_id: ${deviceId}\nuser_id: ${userId}\n\nThis event links the anonymous device to a known user.\nAmplitude will merge these identities.`);
+  await trackEvent('user_signin', deviceId, userId, 'Step 4');
+
+  // Switch to dashboard
+  document.getElementById('landing-page').classList.remove('active');
+  document.getElementById('dashboard-page').classList.add('active');
+  document.getElementById('user-display').textContent = userId;
+
+  // Step 5: track dashboard_viewed with user_id only
+  addDivider('Step 5: Track "dashboard_viewed" (user_id only, no device_id)');
+  await trackEvent('dashboard_viewed', null, userId, 'Step 5');
+
+  // Step 6: fetch experiment with user_id only
+  addDivider('Step 6: Fetch experiment (user_id only, no device_id)');
+  await fetchExperiment({ user_id: userId }, 'Step 6');
+}
+
+function handleSignOut() {
+  localStorage.removeItem('amp_device_id');
+  deviceId = null;
+  userId = null;
+  logContainer.innerHTML = '';
+  document.getElementById('dashboard-page').classList.remove('active');
+  document.getElementById('landing-page').classList.add('active');
+  initLanding();
+}
+
+// --- Settings ---
+const settingsBtn = document.getElementById('settings-btn');
+const settingsOverlay = document.getElementById('settings-overlay');
+const apiKeyInput = document.getElementById('api-key-input');
+
+settingsBtn.addEventListener('click', () => {
+  apiKeyInput.value = API_KEY;
+  settingsOverlay.classList.add('open');
+});
+document.getElementById('settings-cancel').addEventListener('click', () => {
+  settingsOverlay.classList.remove('open');
+});
+settingsOverlay.addEventListener('click', (e) => {
+  if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+});
+document.getElementById('settings-save').addEventListener('click', () => {
+  const newKey = apiKeyInput.value.trim();
+  if (newKey) {
+    API_KEY = newKey;
+    localStorage.setItem('amp_api_key', newKey);
+  }
+  settingsOverlay.classList.remove('open');
+  handleSignOut();
+});
+
+// --- Wire up ---
+document.getElementById('signin-btn').addEventListener('click', handleSignIn);
+document.getElementById('signout-btn').addEventListener('click', handleSignOut);
+
+// Start
+initLanding();
+</script>
+</body>
+</html>
