@@ -348,8 +348,9 @@ async function handleSignIn() {
   addDivider('Step 6: Track "dashboard_viewed" (user_id only, no device_id)');
   await trackEvent('dashboard_viewed', null, userId, 'Step 6');
 
-  // Step 7: fetch experiment with user_id only
-  addDivider('Step 7: Fetch experiment (user_id only, no device_id)');
+  // Step 7: fetch experiment with user_id only (delay to allow identity resolution to propagate)
+  addDivider('Step 7: Fetch experiment (user_id only, no device_id) -- waiting 2s...');
+  await new Promise(r => setTimeout(r, 2000));
   await fetchExperiment({ user_id: userId }, 'Step 7');
 }
 
