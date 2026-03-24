@@ -223,9 +223,7 @@ function addVariantBox(flagKey, variant) {
   scrollLog();
 }
 
-function scrollLog() {
-  logContainer.parentElement.scrollTop = logContainer.parentElement.scrollHeight;
-}
+function scrollLog() {}
 
 function escapeHtml(str) {
   const d = document.createElement('div');
@@ -273,7 +271,6 @@ async function trackEvent(eventType, eventDeviceId, eventUserId, label, userProp
   if (eventDeviceId) event.device_id = eventDeviceId;
   if (eventUserId) event.user_id = eventUserId;
   if (userProperties) event.user_properties = userProperties;
-  event.time = Date.now();
 
   const reqBody = { api_key: API_KEY, events: [event] };
   addLog('request', `${label} -- Analytics Track Request`, {
@@ -330,24 +327,20 @@ async function initLanding() {
 async function handleSignIn() {
   userId = generateUserId();
 
-  // Step 4: sign in - fetch experiment with both device_id and user_id
-  addDivider('Step 4: User signs in -- fetch experiment (device_id + user_id)');
-  addLog('highlight', 'Identity Resolution Moment', `device_id: ${deviceId}\nuser_id: ${userId}\n\nThis fetch call links the anonymous device to a known user.`);
-  await fetchExperiment({ device_id: deviceId, user_id: userId }, 'Step 4');
+  // Step 4: sign in - track login event with both device_id and user_id
+  addDivider('Step 4: User signs in -- track "login" event (device_id + user_id)');
+  addLog('highlight', 'Identity Resolution Moment', `device_id: ${deviceId}\nuser_id: ${userId}\n\nThis event links the anonymous device to a known user.`);
+  await trackEvent('login', deviceId, userId, 'Step 4');
 
   // Switch to dashboard
   document.getElementById('landing-page').classList.remove('active');
   document.getElementById('dashboard-page').classList.add('active');
   document.getElementById('user-display').textContent = userId;
 
-  // Step 5: track dashboard_viewed with user_id only
-  addDivider('Step 5: Track "dashboard_viewed" (user_id only, no device_id)');
-  await trackEvent('dashboard_viewed', null, userId, 'Step 5');
-
-  // Step 6: fetch experiment with user_id only (delay to allow identity resolution to propagate)
-  addDivider('Step 6: Fetch experiment (user_id only, no device_id) -- waiting 2s...');
-  await new Promise(r => setTimeout(r, 2000));
-  await fetchExperiment({ user_id: userId }, 'Step 6');
+  // Step 5: fetch experiment with user_id only (10s delay for ID resolution)
+  await new Promise(resolve => setTimeout(resolve, 10000));
+  addDivider('Step 5: Fetch experiment (user_id only, no device_id)');
+  await fetchExperiment({ user_id: userId }, 'Step 5');
 }
 
 function handleSignOut() {
