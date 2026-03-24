@@ -268,10 +268,11 @@ async function fetchExperiment(context, label) {
   }
 }
 
-async function trackEvent(eventType, eventDeviceId, eventUserId, label) {
+async function trackEvent(eventType, eventDeviceId, eventUserId, label, userProperties) {
   const event = { event_type: eventType };
   if (eventDeviceId) event.device_id = eventDeviceId;
   if (eventUserId) event.user_id = eventUserId;
+  if (userProperties) event.user_properties = userProperties;
   event.time = Date.now();
 
   const reqBody = { api_key: API_KEY, events: [event] };
@@ -329,23 +330,27 @@ async function initLanding() {
 async function handleSignIn() {
   userId = generateUserId();
 
-  // Step 4: sign in - track with both IDs (identity resolution moment)
-  addDivider('Step 4: User signs in -- identity resolution');
-  addLog('highlight', 'Identity Resolution Moment', `device_id: ${deviceId}\nuser_id: ${userId}\n\nThis event links the anonymous device to a known user.\nAmplitude will merge these identities.`);
-  await trackEvent('user_signin', deviceId, userId, 'Step 4');
+  // Step 4: $identify to explicitly merge device_id and user_id
+  addDivider('Step 4: $identify -- explicit identity merge');
+  addLog('highlight', 'Identity Resolution Moment', `device_id: ${deviceId}\nuser_id: ${userId}\n\nSending $identify event to explicitly link the anonymous device to a known user.`);
+  await trackEvent('$identify', deviceId, userId, 'Step 4', { '$set': {} });
+
+  // Step 5: sign in event with both IDs
+  addDivider('Step 5: Track "user_signin" (device_id + user_id)');
+  await trackEvent('user_signin', deviceId, userId, 'Step 5');
 
   // Switch to dashboard
   document.getElementById('landing-page').classList.remove('active');
   document.getElementById('dashboard-page').classList.add('active');
   document.getElementById('user-display').textContent = userId;
 
-  // Step 5: track dashboard_viewed with user_id only
-  addDivider('Step 5: Track "dashboard_viewed" (user_id only, no device_id)');
-  await trackEvent('dashboard_viewed', null, userId, 'Step 5');
+  // Step 6: track dashboard_viewed with user_id only
+  addDivider('Step 6: Track "dashboard_viewed" (user_id only, no device_id)');
+  await trackEvent('dashboard_viewed', null, userId, 'Step 6');
 
-  // Step 6: fetch experiment with user_id only
-  addDivider('Step 6: Fetch experiment (user_id only, no device_id)');
-  await fetchExperiment({ user_id: userId }, 'Step 6');
+  // Step 7: fetch experiment with user_id only
+  addDivider('Step 7: Fetch experiment (user_id only, no device_id)');
+  await fetchExperiment({ user_id: userId }, 'Step 7');
 }
 
 function handleSignOut() {
